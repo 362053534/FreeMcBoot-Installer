@@ -1,9 +1,7 @@
 
 PKG_DATE=$(date '+[%Y-%m-%d]')
-wget https://github.com/israpps/BDMAssault/releases/download/latest/BDMAssault.7z -O BDMAssault.7z
-7z x BDMAssault.7z READY_TO_USE/FreeMcBoot/
 cp ../Changelog.md __base/Changelog.md
-for subdir in 1966 1965 1964 1963 1953
+for subdir in 1965
 do
     echo packing v$subdir into ../FMCB-$subdir.7z
     NEWDIR="FMCBinst-$subdir-$PKG_DATE"
@@ -15,7 +13,9 @@ do
     cp FMCBInstaller.elf $NEWDIR/
     cp FMCBInstaller_EXFAT.elf $NEWDIR/
     mkdir -p $NEWDIR/FMCB_EXFAT/
-    cp -r READY_TO_USE/FreeMcBoot/SYS-CONF/ $NEWDIR/FMCB_EXFAT/
+    mkdir -p $NEWDIR/FMCB_EXFAT/SYS-CONF/
+    # exFAT 驱动直接用本版本 SYS-CONF 里的，不再下载 BDMAssault
+    cp $subdir/INSTALL/SYS-CONF/USBD.IRX $subdir/INSTALL/SYS-CONF/USBHDFSD.IRX $NEWDIR/FMCB_EXFAT/SYS-CONF/
     cp EXFAT_INSTALL_INSTRUCTIONS.TXT $NEWDIR/FMCB_EXFAT/INSTRUCTIONS.TXT
     7z a -t7z -r ../FMCB-$subdir.7z $NEWDIR/*
 done

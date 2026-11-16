@@ -1,20 +1,16 @@
 name: Build [All]
 
 on:
-  workflow_dispatch:
   push:
     paths:
       - 'installer/**'
       - 'installer_res/**'
       - '.github/workflows/compile-core.yml'
-  schedule:
-    - cron: "0 15 1 * *"
-    
-    
+
 jobs:
   build-packages:
     runs-on: ubuntu-latest
-    container: ps2dev/ps2dev:v1.0
+    container: ghcr.io/362053534/ps2dev:latest
     steps:
     - name: Install dependencies
       run: |
@@ -47,7 +43,7 @@ jobs:
 
     - name: Upload artifact
       if: ${{ success() }}
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: FMCB-${{ env.SHA8 }}
         path: |

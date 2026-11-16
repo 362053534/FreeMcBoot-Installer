@@ -27,9 +27,9 @@ static void *gFontBuffer = NULL;
 static int gFontBufferSize;
 unsigned short int SelectButton, CancelButton;
 
-#define NUM_SUPPORTED_LANGUAGES 8
+#define NUM_SUPPORTED_LANGUAGES 1 // 只保留简体中文
 
-static int language = LANGUAGE_ENGLISH;
+static int language = 0; // 所有主机固定使用简体中文
 
 #include "lang.c"
 
@@ -88,55 +88,109 @@ static int FormatLanguageString(const char *in, int len, char *out)
     return (ActualLength + 1);
 }
 
-static void BreakLongLanguageString(char *str)
+// 中日韩字符之间没有空格，允许在它前面断行；句末标点不能出现在行首
+static int IsCJKBreakableChar(wchar_t wchar)
+{
+    if (wchar < 0x2E80)
+        return 0;
+
+    switch (wchar) {
+        case 0x3001: // 、
+        case 0x3002: // 。
+        case 0xFF0C: // ，
+        case 0xFF01: // ！
+        case 0xFF1F: // ？
+        case 0xFF1A: // ：
+        case 0xFF1B: // ；
+        case 0xFF09: // ）
+        case 0x2026: // …
+            return 0;
+    }
+
+    return 1;
+}
+
+// 返回换行后的新字符串（原字符串已释放）；内存不足时原样返回
+static char *BreakLongLanguageString(char *str)
 {
     wchar_t wchar;
-    int CharLen, ScreenLineLenPx, LineMaxPx, PxSinceLastSpace, len, width;
-    char *LastWhitespaceOut;
+    int CharLen, ScreenLineLenPx, LineMaxPx, PxSinceLastBreak, len, width, BreakIsSpace;
+    char *in, *out, *pOut, *pChar, *LastBreakOut;
 
     LineMaxPx = UIDrawGlobal.width - 2 * UI_OFFSET_X;
 
+    len = strlen(str) + 1;
+    // 最坏情况是每个字符前都插入一个换行
+    if ((out = malloc(len * 2)) == NULL)
+        return str;
+
     // Line lengths are counted from the last newline character (either discovered or inserted).
     ScreenLineLenPx = 0;
-    PxSinceLastSpace = 0;
-    len = strlen(str) + 1;
-    CharLen = mbtowc(&wchar, str, len);
-    LastWhitespaceOut = NULL;
+    PxSinceLastBreak = 0;
+    LastBreakOut = NULL;
+    BreakIsSpace = 0;
+    in = str;
+    pOut = out;
+    CharLen = mbtowc(&wchar, in, len);
     while (CharLen > 0 && wchar != '\0') {
+        pChar = pOut;
+        memcpy(pOut, in, CharLen);
+        pOut += CharLen;
+
         switch (wchar) {
             case '\n':
                 ScreenLineLenPx = 0;
-                LastWhitespaceOut = NULL;
-                PxSinceLastSpace = 0;
+                LastBreakOut = NULL;
+                PxSinceLastBreak = 0;
                 break;
             case ' ': // Record where the latest whitespace is.
-                LastWhitespaceOut = str;
-                PxSinceLastSpace = 0;
+                LastBreakOut = pChar;
+                BreakIsSpace = 1;
+                PxSinceLastBreak = 0;
                 break;
+            default:
+                if (IsCJKBreakableChar(wchar)) { // 记录可在此字符前插入换行
+                    LastBreakOut = pChar;
+                    BreakIsSpace = 0;
+                    PxSinceLastBreak = 0;
+                }
         }
 
         if (wchar != '\n') {
             width = FontGetGlyphWidth(&UIDrawGlobal, wchar);
 
-            // To wrap long lines, replace the last whitespace with a newline character
+            // To wrap long lines, replace the last whitespace with a newline character, or insert one before the last CJK character
             if (ScreenLineLenPx + width >= LineMaxPx) {
-                if (LastWhitespaceOut != NULL) {
-                    ScreenLineLenPx = PxSinceLastSpace;
-                    *LastWhitespaceOut = '\n';
-                    LastWhitespaceOut = NULL;
+                if (LastBreakOut != NULL) {
+                    ScreenLineLenPx = PxSinceLastBreak;
+                    if (BreakIsSpace) {
+                        *LastBreakOut = '\n';
+                    } else {
+                        memmove(LastBreakOut + 1, LastBreakOut, pOut - LastBreakOut);
+                        *LastBreakOut = '\n';
+                        pOut++;
+                    }
+                    LastBreakOut = NULL;
                 }
             }
 
             ScreenLineLenPx += width;
             if (wchar != ' ')
-                PxSinceLastSpace += width;
+                PxSinceLastBreak += width;
         }
 
-        str += CharLen;
+        in += CharLen;
         len -= CharLen;
 
-        CharLen = mbtowc(&wchar, str, len);
+        CharLen = mbtowc(&wchar, in, len);
     }
+    *pOut = '\0';
+
+    free(str);
+    if ((str = realloc(out, pOut - out + 1)) == NULL)
+        str = out;
+
+    return str;
 }
 
 static int ParseLanguageFile(char **array, FILE *file, unsigned int ExpectedNumLines)
@@ -214,7 +268,7 @@ static int ParseFontListFile(char **array, FILE *file, unsigned int ExpectedNumL
     return result;
 }
 
-static const char DefaultFontFilename[] = "NotoSans-Bold.ttf";
+static const char DefaultFontFilename[] = "DroidSansFallback.ttf";
 
 static char *GetDefaultFontFilePath(void)
 {
@@ -268,14 +322,7 @@ static int LoadLanguageStrings(unsigned int language)
     FILE *file;
     char path[20];
     static const char *LanguageShortForms[NUM_SUPPORTED_LANGUAGES] = {
-        "JA",
-        "EN",
-        "FR",
-        "SP",
-        "GE",
-        "IT",
-        "DU",
-        "PO"};
+        "SC"};
 
     memset(LangStringTable, 0, sizeof(LangStringTable));
     memset(LangLblStringTable, 0, sizeof(LangLblStringTable));
@@ -366,7 +413,7 @@ static void UnloadLanguage(void)
 const char *GetUIString(unsigned int id)
 {
     if (!(LangStringWrapTable[id / 8] & (1 << (id % 8)))) {
-        BreakLongLanguageString(LangStringTable[id]);
+        LangStringTable[id] = BreakLongLanguageString(LangStringTable[id]);
         LangStringWrapTable[id / 8] |= (1 << (id % 8));
     }
 
@@ -543,8 +590,7 @@ int InitializeUI(int BufferFont)
     int result;
 
     result = 0;
-    if ((language = configGetLanguage()) >= NUM_SUPPORTED_LANGUAGES)
-        language = LANGUAGE_ENGLISH;
+    language = 0; // 不读主机系统语言，固定简体中文
     memset(LangStringWrapTable, 0, sizeof(LangStringWrapTable));
 
     DEBUG_PRINTF("InitializeUI: language is: %u\n", language);

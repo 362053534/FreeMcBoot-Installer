@@ -14,7 +14,7 @@ jobs:
     steps:
     - name: Install dependencies
       run: |
-        apk add make build-base git zip p7zip
+        apk add make build-base git zip p7zip curl
 
     - uses: actions/checkout@v3
       with:
@@ -33,6 +33,20 @@ jobs:
         cd installer
         make rebuild FMCB_INSTALLER_VERSION=${{ env.SHA8 }} EE_BIN_DIR=../installer_res/ 
         make rebuild FMCB_INSTALLER_VERSION=${{ env.SHA8 }} EE_BIN_DIR=../installer_res/ EXFAT=1
+
+    # 从 OPL 仓库 patch-1 分支的 latest 预发布拉取最新 FGOPL.ELF，作为 BOOT.ELF 和硬盘版 OPNPS2LD.ELF
+    - name: Download latest FGOPL
+      run: |
+        set -e
+        curl -fL --retry 3 -o FGOPL.ELF https://github.com/362053534/Open-PS2-Loader/releases/download/latest/FGOPL.ELF
+        # 校验确实是 ELF 文件，避免把错误页面打进包里
+        [ "$(head -c 4 FGOPL.ELF | od -An -tx1 | tr -d ' ')" = "7f454c46" ]
+        ls -l FGOPL.ELF
+        sha256sum FGOPL.ELF
+        mkdir -p installer_res/1965/INSTALL/BOOT installer_res/1965/INSTALL/APPS-HDD/OPL
+        cp -f FGOPL.ELF installer_res/1965/INSTALL/BOOT/BOOT.ELF
+        cp -f FGOPL.ELF installer_res/1965/INSTALL/APPS-HDD/OPL/OPNPS2LD.ELF
+        rm -f FGOPL.ELF
 
     - name: Prepare folder for Release
       run: |

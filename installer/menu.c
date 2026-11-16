@@ -474,7 +474,7 @@ void MainMenu(void)
                 if (HasOldFMCBConfigFile(McPort, 0)) {
                     result = DisplayPromptMessage(SYS_UI_MSG_CNF_FOUND, SYS_UI_LBL_YES, SYS_UI_LBL_NO);
 
-                    if (result == 1) //"YES" selected.
+                    if (result == 2) // 选了"NO"：不覆盖，保留旧 cnf
                         flags |= INSTALL_MODE_FLAG_SKIP_CNF;
                     else if (result == 0) // User pressed back.
                         break;
@@ -696,7 +696,7 @@ void MainMenu(void)
                 if (HasOldFMCBConfigFileOnHDD()) {
                     result = DisplayPromptMessage(SYS_UI_MSG_CNF_HDD_FOUND, SYS_UI_LBL_YES, SYS_UI_LBL_NO);
 
-                    if (result == 1) //"YES" selected.
+                    if (result == 2) // 选了"NO"：不覆盖，保留旧 cnf
                         flags |= INSTALL_MODE_FLAG_SKIP_CNF;
                     else if (result == 0) // User pressed back.
                         break;

@@ -6,6 +6,7 @@
 #include <string.h>
 #include <osd_config.h>
 #include <limits.h>
+#include <errno.h> /* 新 SDK 中 ENOMEM/ENODEV/EIO 不再被间接包含 */
 #include <wchar.h>
 
 #include <libgs.h>

@@ -7,6 +7,7 @@
 #include <libpwroff.h>
 #include <libsecr-common.h>
 #include <hdd-ioctl.h>
+#include <io_common.h> /* 新 SDK 中 FIO_MT_RDWR/FIO_MT_RDONLY 不再被间接包含 */
 #include <loadfile.h>
 #include <malloc.h>
 #include <sifcmd.h>

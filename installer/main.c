@@ -28,6 +28,24 @@
 #include "UI.h"
 #include "menu.h"
 
+/* 新 SDK 已从 libkernel 移除 sio_printf，按原 SDK 实现补回（行为不变） */
+#include <stdarg.h>
+#define SIO_PRINTF_STR_MAX 4096
+int sio_printf(const char *format, ...)
+{
+    static char buf[SIO_PRINTF_STR_MAX];
+    va_list args;
+    int size;
+
+    va_start(args, format);
+    size = vsnprintf(buf, SIO_PRINTF_STR_MAX, format, args);
+    va_end(args);
+
+    sio_write(buf, size);
+
+    return size;
+}
+
 #define GS_BGCOLOUR(x) *((volatile unsigned long int *)0x120000E0) = x
 
 int IsHDDUnitConnected = 0;

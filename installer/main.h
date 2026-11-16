@@ -1,5 +1,7 @@
 #define DEBUG_TTY_FEEDBACK /* Comment out to disable debugging messages */
 #include <sio.h>
+/* 新 SDK 已从 libkernel 移除 sio_printf，这里声明，实现在 main.c */
+int sio_printf(const char *format, ...);
 #define DEBUG_PRINTF(args...) sio_printf(args)
 
 #ifndef FMCB_INSTALLER_VERSION

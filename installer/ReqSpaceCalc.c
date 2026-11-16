@@ -2,7 +2,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <sys/stat.h>
-#include <iox_stat.h> /* 新 SDK 中 FIO_S_* 不再被间接包含 */
 
 #include "main.h"
 #include "system.h"

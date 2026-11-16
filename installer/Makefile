@@ -8,11 +8,11 @@ IRX_DIR = irx/compiled
 EE_RES_OBJS = background.o buttons.o
 EE_OBJS = main.o iop.o UI.o menu.o libsecr.o pad.o system.o graphics.o ReqSpaceCalc.o font.o $(EE_RES_OBJS) $(EE_IOP_OBJS) mctools_rpc.o
 
-EE_INCS := -I$(PS2SDK)/ports/include -I$(PS2SDK)/ports/include/freetype2 -I$(PS2SDK)/ee/include -I$(PS2SDK)/common/include -I./irx/source/secrsif/src -I./irx/source/mctools/src/
+EE_INCS := -I$(PS2SDK)/ports/include -I$(PS2SDK)/ee/include -I$(PS2SDK)/common/include -I./irx/source/secrsif/src -I./irx/source/mctools/src/
 EE_LDFLAGS := -L$(PS2SDK)/ports/lib -L$(PS2SDK)/ee/lib -L$(PS2DEV)/ee/ee/lib -Tlinkfile -s
 EE_LIBS = -lgs -lpng -lz -lm -lfreetype -lpoweroff -lcdvd -lmc -lpadx -lhdd -lfileXio -lpatches -liopreboot -lc -lkernel
-EE_GPVAL = -G0
-EE_CFLAGS += -D_EE -DNEWLIB_PORT_AWARE -Os -mgpopt $(EE_GPVAL) -Wno-error=implicit-function-declaration -Wno-error=int-conversion
+EE_GPVAL = -G8192
+EE_CFLAGS += -Os -mgpopt $(EE_GPVAL)
 
 ifeq ($(EXFAT), 1)
     HAS_EXFAT = _EXFAT
@@ -39,8 +39,8 @@ endif
 %.o : %.s
 	$(EE_AS) $(EE_ASFLAGS) $< -o $@
 
-$(EE_BIN) : $(EE_OBJS)
-	$(EE_CC) $(EE_CFLAGS) $(EE_LDFLAGS) -o $(EE_BIN) $(EE_OBJS) $(EE_LIBS)
+$(EE_BIN) : $(EE_OBJS) $(PS2SDK)/ee/startup/crt0.o
+	$(EE_CC) $(EE_CFLAGS) -nostartfiles $(EE_LDFLAGS) -o $(EE_BIN) $(EE_OBJS) $(PS2SDK)/ee/startup/crt0.o $(EE_LIBS)
 
 all: $(EE_BIN)
 

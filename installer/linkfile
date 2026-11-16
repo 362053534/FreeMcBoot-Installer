@@ -11,8 +11,7 @@
 # Linkfile script for ee-ld
 */
 
-/* 新 SDK 的 crt0（由工具链自动链接）入口符号为 __start */
-ENTRY(__start);
+ENTRY(_start);
 
 SECTIONS {
 	.text 0x00200000: {

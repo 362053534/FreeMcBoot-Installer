@@ -9,30 +9,17 @@ on:
 
 jobs:
   build-packages:
+    # action 直接跑在运行器上；编译和打包放进原作者的 ps2dev:v1.0 镜像里执行
+    # （老镜像的 Alpine 跑不了 GitHub 强制的 node24，不能再用 container:）
     runs-on: ubuntu-latest
-    container: ghcr.io/362053534/ps2dev:latest
     steps:
-    - name: Install dependencies
-      run: |
-        apk add make build-base git zip p7zip curl
-
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
-
-    - run: |
-        git config --global --add safe.directory "$GITHUB_WORKSPACE"
-        git fetch
 
     - name: Get short SHA
       id: slug
       run: echo "SHA8=$(echo ${GITHUB_SHA} | cut -c1-8)" >> $GITHUB_ENV
-
-    - name: Compile
-      run: |
-        cd installer
-        make rebuild FMCB_INSTALLER_VERSION=${{ env.SHA8 }} EE_BIN_DIR=../installer_res/ 
-        make rebuild FMCB_INSTALLER_VERSION=${{ env.SHA8 }} EE_BIN_DIR=../installer_res/ EXFAT=1
 
     # 从 OPL 仓库 patch-1 分支的 latest 预发布拉取最新 FGOPL.ELF，作为 BOOT.ELF 和硬盘版 OPNPS2LD.ELF
     - name: Download latest FGOPL
@@ -48,12 +35,19 @@ jobs:
         cp -f FGOPL.ELF installer_res/1965/INSTALL/APPS-HDD/OPL/OPNPS2LD.ELF
         rm -f FGOPL.ELF
 
-    - name: Prepare folder for Release
+    - name: Compile and pack
       run: |
-        cd installer_res
-        ls
-        chmod +x ./pack.sh
-        ./pack.sh
+        docker run --rm -e SHA8="${SHA8}" -v "$GITHUB_WORKSPACE:/src" -w /src ps2dev/ps2dev:v1.0 sh -c '
+          set -e
+          apk add build-base git zip p7zip
+          cd installer
+          make rebuild FMCB_INSTALLER_VERSION=$SHA8 EE_BIN_DIR=../installer_res/
+          make rebuild FMCB_INSTALLER_VERSION=$SHA8 EE_BIN_DIR=../installer_res/ EXFAT=1
+          cd ../installer_res
+          ls
+          chmod +x ./pack.sh
+          ./pack.sh
+        '
 
     - name: Upload artifact
       if: ${{ success() }}

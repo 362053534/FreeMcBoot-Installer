@@ -947,7 +947,7 @@ void RedrawLoadingScreen(unsigned int frame)
     NumDots = frame % 240 / 60;
 
     DrawBackground(&UIDrawGlobal, &BackgroundTexture);
-    FontPrintf(&UIDrawGlobal, 10, 10, 0, 2.5f, GS_WHITE_FONT, "FMCBInstaller v" FMCB_INSTALLER_VERSION);
+    FontPrintf(&UIDrawGlobal, 10, 10, 0, 2.5f, GS_WHITE_FONT, "FMCBInstaller 峰哥OPL直装版"); // 欢迎界面标题
 
     x = 420;
     y = 380;

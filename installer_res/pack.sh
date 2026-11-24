@@ -4,11 +4,11 @@ cp ../Changelog.md __base/Changelog.md
 for subdir in 1965
 do
     echo packing v$subdir into ../FMCB-$subdir.7z
-    NEWDIR="FMCBinst-$subdir-$PKG_DATE"
+    NEWDIR="FMCBinst-$subdir-FGOPL"
     cp -r __base/ $NEWDIR/
     cp -r $subdir/INSTALL/ $NEWDIR/INSTALL/
     echo $SHA8>$NEWDIR/lang/commit.txt
-    echo "title=FreeMcBoot v$subdir $PKG_DATE" >$NEWDIR/title.cfg
+    echo "title=FreeMcBoot v$subdir FGOPL" >$NEWDIR/title.cfg
     echo "boot=FMCBInstaller.elf">>$NEWDIR/title.cfg
     cp FMCBInstaller.elf $NEWDIR/
     cp FMCBInstaller_EXFAT.elf $NEWDIR/

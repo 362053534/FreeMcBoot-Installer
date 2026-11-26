@@ -120,6 +120,19 @@ int GetConsoleRegion(void)
     return region;
 }
 
+/* 中国行货(50009)使用独立的一套CNF。 */
+static const char *GetCnfSourceRelPath(const char *SrcRelPath)
+{
+    if (GetConsoleRegion() == CONSOLE_REGION_CHINA) {
+        if (strcmp(SrcRelPath, "SYS-CONF/FREEMCB.CNF") == 0)
+            return "SYS-CONF/FREEMCB_CN.CNF";
+        if (strcmp(SrcRelPath, "SYS-CONF/FREEHDB.CNF") == 0)
+            return "SYS-CONF/FREEHDB_CN.CNF";
+    }
+
+    return SrcRelPath;
+}
+
 int GetConsoleVMode(void)
 {
     switch (GetConsoleRegion()) {
@@ -1260,12 +1273,15 @@ int PerformHDDInstallation(unsigned int flags)
         }
 
         for (i = 0; i < HDD_BASE_INSTALL_NUM_FILES; i++) {
+            const char *CnfSrcRelPath;
+
             if (flags & INSTALL_MODE_FLAG_SKIP_CNF && (strstr(HDDBaseFiles[i].DestRelPath, "FREEHDB.CNF") != NULL)) {
                 continue;
             }
 
-            FileCopyList[file].source = malloc(strlen(HDDBaseFiles[i].SrcRelPath) + 1);
-            strcpy(FileCopyList[file].source, HDDBaseFiles[i].SrcRelPath);
+            CnfSrcRelPath = GetCnfSourceRelPath(HDDBaseFiles[i].SrcRelPath);
+            FileCopyList[file].source = malloc(strlen(CnfSrcRelPath) + 1);
+            strcpy(FileCopyList[file].source, CnfSrcRelPath);
 
             FileCopyList[file].target = malloc(strlen(HDDBaseFiles[i].DestRelPath) + 1);
             strcpy(FileCopyList[file].target, HDDBaseFiles[i].DestRelPath);
@@ -1648,12 +1664,15 @@ int PerformInstallation(unsigned char port, unsigned char slot, unsigned int fla
         }
 
         for (i = 0; i < BASE_INSTALL_NUM_FILES; i++) {
+            const char *CnfSrcRelPath;
+
             if (flags & INSTALL_MODE_FLAG_SKIP_CNF && (strstr(BaseFiles[i].DestRelPath, "FREEMCB.CNF") != NULL)) {
                 continue;
             }
 
-            FileCopyList[file].source = malloc(strlen(BaseFiles[i].SrcRelPath) + 1);
-            strcpy(FileCopyList[file].source, BaseFiles[i].SrcRelPath);
+            CnfSrcRelPath = GetCnfSourceRelPath(BaseFiles[i].SrcRelPath);
+            FileCopyList[file].source = malloc(strlen(CnfSrcRelPath) + 1);
+            strcpy(FileCopyList[file].source, CnfSrcRelPath);
 
             FileCopyList[file].target = malloc(strlen(BaseFiles[i].DestRelPath) + 1);
             strcpy(FileCopyList[file].target, BaseFiles[i].DestRelPath);
